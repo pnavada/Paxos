@@ -62,11 +62,21 @@ func (mh *MessageHandler) handleMessage(msgType types.MessageType, data []int, s
 }
 
 func (mh *MessageHandler) handlePrepareMessage(data []int, sender string) {
+	senderId, _ := utils.GetPeerIdFromName(sender, mh.Peer.Peers.GetAll())
+	mh.Peer.LogMessage(
+		"received",
+		"prepare",
+		rune(data[2]),
+		senderId,
+		int(utils.GetN(
+			int32(data[0]),
+			int32(data[1]),
+		)),
+	)
 	proposalNumber := &types.ProposalNumber{
 		RoundNumber: datastructures.NewSafeValue(data[0]),
 		ServerId:    datastructures.NewSafeValue(data[1]),
 	}
-
 	n := utils.GetN(int32(proposalNumber.RoundNumber.Get()), int32(proposalNumber.ServerId.Get()))
 	if n > mh.Peer.Store.MinProposalNumber.Get() {
 		mh.Peer.Store.MinProposalNumber.Set(n)
@@ -78,6 +88,17 @@ func (mh *MessageHandler) handlePrepareMessage(data []int, sender string) {
 }
 
 func (mh *MessageHandler) handlePrepareAckMessage(data []int, sender string) {
+	senderId, _ := utils.GetPeerIdFromName(sender, mh.Peer.Peers.GetAll())
+	mh.Peer.LogMessage(
+		"received",
+		"prepare_ack",
+		rune(data[2]),
+		senderId,
+		int(utils.GetN(
+			int32(data[0]),
+			int32(data[1]),
+		)),
+	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
 	if _, ok := mh.Peer.PrepareAck.Load(n); !ok {
 		mh.Peer.PrepareAck.Store(n, datastructures.NewSafeList(make([][]int, 0)))
@@ -103,6 +124,17 @@ func (mh *MessageHandler) handlePrepareAckMessage(data []int, sender string) {
 }
 
 func (mh *MessageHandler) handleAcceptMessage(data []int, sender string) {
+	senderId, _ := utils.GetPeerIdFromName(sender, mh.Peer.Peers.GetAll())
+	mh.Peer.LogMessage(
+		"received",
+		"accept",
+		rune(data[2]),
+		senderId,
+		int(utils.GetN(
+			int32(data[0]),
+			int32(data[1]),
+		)),
+	)
 	proposalNumber := types.ProposalNumber{
 		RoundNumber: datastructures.NewSafeValue(data[0]),
 		ServerId:    datastructures.NewSafeValue(data[1]),
@@ -118,6 +150,17 @@ func (mh *MessageHandler) handleAcceptMessage(data []int, sender string) {
 }
 
 func (mh *MessageHandler) handleAcceptAckMessage(data []int, sender string) {
+	senderId, _ := utils.GetPeerIdFromName(sender, mh.Peer.Peers.GetAll())
+	mh.Peer.LogMessage(
+		"received",
+		"accept_ack",
+		mh.Peer.ProposalValue.Get(),
+		senderId,
+		int(utils.GetN(
+			int32(data[0]),
+			int32(data[1]),
+		)),
+	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
 	if _, ok := mh.Peer.AcceptAck.Load(n); !ok {
 		mh.Peer.AcceptAck.Store(n, datastructures.NewSafeList(make([][]int, 0)))

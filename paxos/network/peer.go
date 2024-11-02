@@ -63,6 +63,16 @@ func (p *Peer) SendPrepare() {
 	)
 	for _, acceptor := range p.Acceptors.GetAll() {
 		p.SendMessageToPeer(acceptor, data)
+		p.LogMessage(
+			"sent",
+			"prepare",
+			p.ProposalValue.Get(),
+			p.Id,
+			int(utils.GetN(
+				int32(p.Store.RoundNumber.Get()),
+				int32(p.Id),
+			)),
+		)
 	}
 }
 
@@ -82,6 +92,16 @@ func (p *Peer) SendPrepareAck(sender string) {
 		int(prepareAckMessage.AcceptedValue.Get()),
 	)
 	p.SendMessageToPeer(sender, data)
+	p.LogMessage(
+		"sent",
+		"prepare_ack",
+		rune(data[3]),
+		p.Id,
+		int(utils.GetN(
+			int32(data[1]),
+			int32(data[2]),
+		)),
+	)
 }
 
 func (p *Peer) SendAccept() {
@@ -100,6 +120,16 @@ func (p *Peer) SendAccept() {
 	)
 	for _, acceptor := range p.Acceptors.GetAll() {
 		p.SendMessageToPeer(acceptor, data)
+		p.LogMessage(
+			"sent",
+			"accept",
+			rune(data[3]),
+			p.Id,
+			int(utils.GetN(
+				int32(data[1]),
+				int32(data[2]),
+			)),
+		)
 	}
 }
 
@@ -117,6 +147,16 @@ func (p *Peer) SendAcceptAck(sender string) {
 		acceptAckMessage.ProposalNumber.ServerId.Get(),
 	)
 	p.SendMessageToPeer(sender, data)
+	p.LogMessage(
+		"sent",
+		"accept_ack",
+		p.Store.AcceptedValue.Get(),
+		p.Id,
+		int(utils.GetN(
+			int32(data[1]),
+			int32(data[2]),
+		)),
+	)
 }
 
 func (p *Peer) SendMessageToPeer(peer string, data []byte) {
@@ -132,7 +172,6 @@ func (p *Peer) SendMessageToPeer(peer string, data []byte) {
 	}
 }
 
-// Network communication
 func (p *Peer) ListenForTCPConnections() {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", tcpPort))
 	if err != nil {
@@ -221,4 +260,12 @@ func NewPeer(hostsFile string, proposalValue rune) (*Peer, error) {
 		ProposalValue: datastructures.NewSafeValue(proposalValue),
 		QuorumSize:    datastructures.NewSafeValue(len(acceptors)),
 	}, nil
+}
+
+func (p *Peer) LogMessage(action, messageType string, messageValue rune, peerId, proposalNumber int) {
+	logMessage := fmt.Sprintf(
+		`{"peer_id":%d, "action": "%s", "message_type":"%s", "message_value":"%c", "proposal_num":%d}`,
+		peerId, action, messageType, p.ProposalValue.Get(), utils.GetN(int32(p.Store.RoundNumber.Get()), int32(p.Id)),
+	)
+	utils.PrintToStderr(logMessage)
 }
