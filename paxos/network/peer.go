@@ -70,9 +70,10 @@ func (p *Peer) SendPrepare() {
 			"prepare",
 			p.ProposalValue.Get(),
 			p.Id,
-			utils.GetN(
-				int32(p.Store.RoundNumber.Get()),
-				int32(p.Id),
+			fmt.Sprintf(
+				"%d.%d",
+				p.Store.RoundNumber.Get(),
+				p.Id,
 			),
 		)
 	}
@@ -99,9 +100,10 @@ func (p *Peer) SendPrepareAck(sender string) {
 		"prepare_ack",
 		rune(prepareAckMessage.AcceptedValue.Get()),
 		p.Id,
-		utils.GetN(
-			int32(prepareAckMessage.AcceptedProposalNumber.RoundNumber.Get()),
-			int32(prepareAckMessage.AcceptedProposalNumber.ServerId.Get()),
+		fmt.Sprintf(
+			"%d.%d",
+			prepareAckMessage.AcceptedProposalNumber.RoundNumber.Get(),
+			prepareAckMessage.AcceptedProposalNumber.ServerId.Get(),
 		),
 	)
 }
@@ -127,9 +129,10 @@ func (p *Peer) SendAccept() {
 			"accept",
 			rune(acceptMessage.ProposalValue.Get()),
 			p.Id,
-			utils.GetN(
-				int32(acceptMessage.ProposalNumber.RoundNumber.Get()),
-				int32(acceptMessage.ProposalNumber.ServerId.Get()),
+			fmt.Sprintf(
+				"%d.%d",
+				acceptMessage.ProposalNumber.RoundNumber.Get(),
+				acceptMessage.ProposalNumber.ServerId.Get(),
 			),
 		)
 	}
@@ -154,9 +157,10 @@ func (p *Peer) SendAcceptAck(sender string) {
 		"accept_ack",
 		p.Store.AcceptedValue.Get(),
 		p.Id,
-		utils.GetN(
-			int32(acceptAckMessage.ProposalNumber.RoundNumber.Get()),
-			int32(acceptAckMessage.ProposalNumber.ServerId.Get()),
+		fmt.Sprintf(
+			"%d.%d",
+			acceptAckMessage.ProposalNumber.RoundNumber.Get(),
+			acceptAckMessage.ProposalNumber.ServerId.Get(),
 		),
 	)
 }
@@ -265,9 +269,9 @@ func NewPeer(hostsFile string, proposalValue rune) (*Peer, error) {
 	}, nil
 }
 
-func (p *Peer) LogMessage(action, messageType string, messageValue rune, peerId int, proposalNumber int64) {
+func (p *Peer) LogMessage(action, messageType string, messageValue rune, peerId int, proposalNumber string) {
 	logMessage := fmt.Sprintf(
-		`{"peer_id":%d, "action": "%s", "message_type":"%s", "message_value":"%c", "proposal_num":%d}`,
+		`{"peer_id":%d, "action": "%s", "message_type":"%s", "message_value":"%c", "proposal_num":%s}`,
 		peerId, action, messageType, messageValue, proposalNumber,
 	)
 	utils.PrintToStderr(logMessage)

@@ -68,9 +68,10 @@ func (mh *MessageHandler) handlePrepareMessage(data []int, sender string) {
 		"prepare",
 		rune(data[2]),
 		senderId,
-		utils.GetN(
-			int32(data[0]),
-			int32(data[1]),
+		fmt.Sprintf(
+			"%d.%d",
+			data[0],
+			data[1],
 		),
 	)
 	proposalNumber := &types.ProposalNumber{
@@ -94,9 +95,10 @@ func (mh *MessageHandler) handlePrepareAckMessage(data []int, sender string) {
 		"prepare_ack",
 		rune(data[2]),
 		senderId,
-		utils.GetN(
-			int32(data[0]),
-			int32(data[1]),
+		fmt.Sprintf(
+			"%d.%d",
+			data[0],
+			data[1],
 		),
 	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
@@ -130,9 +132,10 @@ func (mh *MessageHandler) handleAcceptMessage(data []int, sender string) {
 		"accept",
 		rune(data[2]),
 		senderId,
-		utils.GetN(
-			int32(data[0]),
-			int32(data[1]),
+		fmt.Sprintf(
+			"%d.%d",
+			data[0],
+			data[1],
 		),
 	)
 	proposalNumber := types.ProposalNumber{
@@ -156,9 +159,10 @@ func (mh *MessageHandler) handleAcceptAckMessage(data []int, sender string) {
 		"accept_ack",
 		mh.Peer.ProposalValue.Get(),
 		senderId,
-		utils.GetN(
-			int32(data[0]),
-			int32(data[1]),
+		fmt.Sprintf(
+			"%d.%d",
+			data[0],
+			data[1],
 		),
 	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
@@ -184,9 +188,10 @@ func (mh *MessageHandler) handleAcceptAckMessage(data []int, sender string) {
 			"chose",
 			mh.Peer.ProposalValue.Get(),
 			mh.Peer.Id,
-			utils.GetN(
-				int32(mh.Peer.Store.RoundNumber.Get()),
-				int32(mh.Peer.Id),
+			fmt.Sprintf(
+				"%d.%d",
+				mh.Peer.Store.RoundNumber.Get(),
+				mh.Peer.Id,
 			),
 		)
 	}
