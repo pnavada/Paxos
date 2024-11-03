@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"paxos/paxos/datastructures"
 	"paxos/paxos/types"
@@ -41,6 +42,7 @@ const tcpPort = 8080
 func (p *Peer) Start() {
 	go p.ListenForTCPConnections()
 	// If I am the proposer, send prepare to acceptors
+	time.Sleep(2 * time.Second)
 	if p.ProposerId != -1 {
 		go p.SendPrepare()
 	}
@@ -62,16 +64,16 @@ func (p *Peer) SendPrepare() {
 		int(prepareMessage.ProposalValue.Get()),
 	)
 	for _, acceptor := range p.Acceptors.GetAll() {
-		p.SendMessageToPeer(acceptor, data)
+		go p.SendMessageToPeer(acceptor, data)
 		p.LogMessage(
 			"sent",
 			"prepare",
 			p.ProposalValue.Get(),
 			p.Id,
-			int(utils.GetN(
+			utils.GetN(
 				int32(p.Store.RoundNumber.Get()),
 				int32(p.Id),
-			)),
+			),
 		)
 	}
 }
@@ -95,12 +97,12 @@ func (p *Peer) SendPrepareAck(sender string) {
 	p.LogMessage(
 		"sent",
 		"prepare_ack",
-		rune(data[3]),
+		rune(prepareAckMessage.AcceptedValue.Get()),
 		p.Id,
-		int(utils.GetN(
-			int32(data[1]),
-			int32(data[2]),
-		)),
+		utils.GetN(
+			int32(prepareAckMessage.AcceptedProposalNumber.RoundNumber.Get()),
+			int32(prepareAckMessage.AcceptedProposalNumber.ServerId.Get()),
+		),
 	)
 }
 
@@ -123,12 +125,12 @@ func (p *Peer) SendAccept() {
 		p.LogMessage(
 			"sent",
 			"accept",
-			rune(data[3]),
+			rune(acceptMessage.ProposalValue.Get()),
 			p.Id,
-			int(utils.GetN(
-				int32(data[1]),
-				int32(data[2]),
-			)),
+			utils.GetN(
+				int32(acceptMessage.ProposalNumber.RoundNumber.Get()),
+				int32(acceptMessage.ProposalNumber.ServerId.Get()),
+			),
 		)
 	}
 }
@@ -152,10 +154,10 @@ func (p *Peer) SendAcceptAck(sender string) {
 		"accept_ack",
 		p.Store.AcceptedValue.Get(),
 		p.Id,
-		int(utils.GetN(
-			int32(data[1]),
-			int32(data[2]),
-		)),
+		utils.GetN(
+			int32(acceptAckMessage.ProposalNumber.RoundNumber.Get()),
+			int32(acceptAckMessage.ProposalNumber.ServerId.Get()),
+		),
 	)
 }
 
@@ -165,7 +167,6 @@ func (p *Peer) SendMessageToPeer(peer string, data []byte) {
 		fmt.Printf("error resolving address for host %s: %v\n", peer, err)
 		return
 	}
-
 	p.WriteChannel <- types.OutboundMessage{
 		Data:      data,
 		Recipient: addr,
@@ -242,10 +243,10 @@ func NewPeer(hostsFile string, proposalValue rune) (*Peer, error) {
 	}
 
 	store := &PeerStore{
-		MinProposalNumber:      datastructures.NewSafeValue(utils.GetN(-1, int32(id))),
-		AcceptedProposalNumber: datastructures.NewSafeValue(utils.GetN(-1, int32(id))),
+		MinProposalNumber:      datastructures.NewSafeValue(utils.GetN(0, int32(id))),
+		AcceptedProposalNumber: datastructures.NewSafeValue(utils.GetN(0, int32(id))),
 		AcceptedValue:          datastructures.NewSafeValue[rune](0),
-		RoundNumber:            datastructures.NewSafeValue(-1),
+		RoundNumber:            datastructures.NewSafeValue(0),
 	}
 
 	return &Peer{
@@ -259,13 +260,15 @@ func NewPeer(hostsFile string, proposalValue rune) (*Peer, error) {
 		TCPEgress:     NewTCPConnectionPool(tcpPort, Outgoing),
 		ProposalValue: datastructures.NewSafeValue(proposalValue),
 		QuorumSize:    datastructures.NewSafeValue(len(acceptors)),
+		ReadChannel:   make(chan types.InboundMessage),
+		WriteChannel:  make(chan types.OutboundMessage),
 	}, nil
 }
 
-func (p *Peer) LogMessage(action, messageType string, messageValue rune, peerId, proposalNumber int) {
+func (p *Peer) LogMessage(action, messageType string, messageValue rune, peerId int, proposalNumber int64) {
 	logMessage := fmt.Sprintf(
 		`{"peer_id":%d, "action": "%s", "message_type":"%s", "message_value":"%c", "proposal_num":%d}`,
-		peerId, action, messageType, p.ProposalValue.Get(), utils.GetN(int32(p.Store.RoundNumber.Get()), int32(p.Id)),
+		peerId, action, messageType, messageValue, proposalNumber,
 	)
 	utils.PrintToStderr(logMessage)
 }

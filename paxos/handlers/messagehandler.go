@@ -24,9 +24,9 @@ func (mh *MessageHandler) HandleMessages() {
 	for {
 		select {
 		case inboundMessage := <-mh.Peer.ReadChannel:
-			mh.processInboundMessage(inboundMessage)
+			go mh.processInboundMessage(inboundMessage)
 		case outboundMessage := <-mh.Peer.WriteChannel:
-			mh.sendMessage(outboundMessage)
+			go mh.sendMessage(outboundMessage)
 		}
 	}
 }
@@ -68,10 +68,10 @@ func (mh *MessageHandler) handlePrepareMessage(data []int, sender string) {
 		"prepare",
 		rune(data[2]),
 		senderId,
-		int(utils.GetN(
+		utils.GetN(
 			int32(data[0]),
 			int32(data[1]),
-		)),
+		),
 	)
 	proposalNumber := &types.ProposalNumber{
 		RoundNumber: datastructures.NewSafeValue(data[0]),
@@ -94,10 +94,10 @@ func (mh *MessageHandler) handlePrepareAckMessage(data []int, sender string) {
 		"prepare_ack",
 		rune(data[2]),
 		senderId,
-		int(utils.GetN(
+		utils.GetN(
 			int32(data[0]),
 			int32(data[1]),
-		)),
+		),
 	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
 	if _, ok := mh.Peer.PrepareAck.Load(n); !ok {
@@ -130,10 +130,10 @@ func (mh *MessageHandler) handleAcceptMessage(data []int, sender string) {
 		"accept",
 		rune(data[2]),
 		senderId,
-		int(utils.GetN(
+		utils.GetN(
 			int32(data[0]),
 			int32(data[1]),
-		)),
+		),
 	)
 	proposalNumber := types.ProposalNumber{
 		RoundNumber: datastructures.NewSafeValue(data[0]),
@@ -156,10 +156,10 @@ func (mh *MessageHandler) handleAcceptAckMessage(data []int, sender string) {
 		"accept_ack",
 		mh.Peer.ProposalValue.Get(),
 		senderId,
-		int(utils.GetN(
+		utils.GetN(
 			int32(data[0]),
 			int32(data[1]),
-		)),
+		),
 	)
 	n := utils.GetN(int32(mh.Peer.Store.RoundNumber.Get()), int32(mh.Peer.Id))
 	if _, ok := mh.Peer.AcceptAck.Load(n); !ok {
@@ -179,8 +179,17 @@ func (mh *MessageHandler) handleAcceptAckMessage(data []int, sender string) {
 				return
 			}
 		}
+		mh.Peer.LogMessage(
+			"chose",
+			"chose",
+			mh.Peer.ProposalValue.Get(),
+			mh.Peer.Id,
+			utils.GetN(
+				int32(mh.Peer.Store.RoundNumber.Get()),
+				int32(mh.Peer.Id),
+			),
+		)
 	}
-	// Value is chosen
 }
 
 func (mh *MessageHandler) sendMessage(outboundMessage types.OutboundMessage) {
@@ -193,7 +202,6 @@ func (mh *MessageHandler) sendMessage(outboundMessage types.OutboundMessage) {
 
 	tcpConn := conn.(net.Conn)
 	_, err = tcpConn.Write(outboundMessage.Data)
-
 	if err != nil {
 		fmt.Printf("Error sending message: %v\n", err)
 	}

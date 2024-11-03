@@ -25,6 +25,6 @@ func main() {
 	go peer.Start()
 
 	mh := handlers.NewMessageHandler(peer)
-	go mh.HandleMessages()
+	mh.HandleMessages()
 
 }
