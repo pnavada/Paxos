@@ -12,29 +12,27 @@ This project implements the Paxos consensus protocol in Go, allowing distributed
 - Docker
 - Docker Compose
 
-## Building the Project
+## Building and Running
+
+### Initial Setup
 ```bash
 # Build the Docker image
-docker build -t prj4 .
+make docker
 ```
 
-## Test Cases
+### Running Test Cases
 
-### Test Case 1: Single Proposer
+#### Test Case 1: Single Proposer
 This test case demonstrates basic Paxos consensus with one proposer and three acceptors.
 
-#### Configuration
+**Configuration**
 - 1 Proposer (peer1) proposing value 'X'
 - 3 Acceptors (peer2, peer3, peer4)
 - 1 Learner (peer5)
 
-#### Running Test Case 1
 ```bash
-# Start the containers
-docker-compose -f docker-compose-testcase-1.yml up
-
-# To clean up after testing
-docker-compose -f docker-compose-testcase-1.yml down
+# Run test case 1
+make run-test1
 ```
 
 #### Expected Behavior
@@ -43,23 +41,18 @@ docker-compose -f docker-compose-testcase-1.yml down
 - Final value 'X' should be chosen
 - Messages will be logged showing the protocol progression
 
-### Test Case 2: Competing Proposers
+#### Test Case 2: Competing Proposers
 This test case demonstrates conflict resolution between multiple proposers.
 
-#### Configuration
+**Configuration**
 - 2 Proposers:
   - peer1 (proposing value 'X')
   - peer5 (proposing value 'Y' after 10-second delay)
 - 3 Acceptors (peer2, peer3, peer4) participating in both proposer groups
-- No dedicated learners
 
-#### Running Test Case 2
 ```bash
-# Start the containers
-docker-compose -f docker-compose-testcase-2.yml up
-
-# To clean up after testing
-docker-compose -f docker-compose-testcase-2.yml down
+# Run test case 2
+make run-test2
 ```
 
 #### Expected Behavior
@@ -67,6 +60,15 @@ docker-compose -f docker-compose-testcase-2.yml down
 - peer5 will propose value 'Y' after 10 seconds (i.e, after peer3 sends accept to peer1)
 - The protocol should handle the conflict and reach consensus
 - Final value 'X' should be chosen by both proposers
+
+### Cleanup
+```bash
+# Stop running containers
+make stop-test
+
+# Clean Docker images and system
+make docker-clean
+```
 
 ## Implementation Details
 
@@ -95,7 +97,7 @@ Roles can be:
 - `-v string`: Proposal value for proposer
 - `-t int`: Delay in seconds before proposing (optional)
 
-## Monitoring and Debugging
+## Monitoring
 The implementation logs JSON messages to stderr in the format:
 ```json
 {
