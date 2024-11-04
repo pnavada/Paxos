@@ -42,7 +42,7 @@ const tcpPort = 8080
 func (p *Peer) Start() {
 	go p.ListenForTCPConnections()
 	// If I am the proposer, send prepare to acceptors
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	if p.ProposerId != -1 {
 		go p.SendPrepare()
 	}
